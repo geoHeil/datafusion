@@ -1,0 +1,29 @@
+# Fork-only: runs the PR's decode tests with the fix and with the fix's source
+# files restored from the base commit (HEAD~2), to show the tests fail without it.
+name: Verify decode tests
+
+on: push
+
+jobs:
+  test:
+    name: ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [with-fix, without-fix]
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+      - name: Restore the base commit's source files
+        if: matrix.variant == 'without-fix'
+        run: git checkout HEAD~2 -- datafusion/proto/src/physical_plan/mod.rs datafusion/proto/src/logical_plan/mod.rs && git status --short
+      - name: Test
+        run: cargo test -p datafusion-proto --test proto_integration -- avro_scan_decode_returns_error listing_scan_avro_format_decode
