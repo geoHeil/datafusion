@@ -1,5 +1,5 @@
 # Fork-only: runs the PR's decode tests with the fix and with the fix's source
-# files restored from the base commit (HEAD~2), to show the tests fail without it.
+# files restored from the fix commit's parent, to show the tests fail without it.
 name: Verify decode tests
 
 on: push
@@ -19,11 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: 0
       - name: Free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
       - name: Restore the base commit's source files
         if: matrix.variant == 'without-fix'
-        run: git checkout HEAD~2 -- datafusion/physical-plan/src/unnest.rs datafusion/physical-plan/src/explain.rs && git status --short
+        run: git checkout d7ad548~1 -- datafusion/physical-plan/src/unnest.rs datafusion/physical-plan/src/explain.rs && git status --short
       - name: Test
         run: cargo test -p datafusion-proto --test proto_integration -- decode_explain_exec_node_without_plan_type decode_unnest_exec_node_without_recursion_columns
